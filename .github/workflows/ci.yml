@@ -1,0 +1,61 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: ci-test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:12.13-alpine3.17
+        env:
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .env on testing
+      run: |
+        POSTGRES_USER=$(echo "${{ secrets.POSTGRES_USER }}")
+        POSTGRES_PASSWORD=$(echo "${{ secrets.POSTGRES_PASSWORD }}")
+        POSTGRES_DB=$(echo "${{ secrets.POSTGRES_DB }}")
+        echo "DB_SOURCE=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@127.0.0.1:5432/$POSTGRES_DB?sslmode=disable" >> app.env
+        echo "DB_DRIVER=postgres" >> app.env
+        echo "SERVER_ADDRESS=0.0.0.0:8080" >> app.env
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.19
+
+    - name: Installing Dependencies
+      run: go mod tidy
+
+    - name: Install golang-migrate
+      run: |
+        curl -L https://github.com/golang-migrate/migrate/releases/download/v4.15.2/migrate.linux-amd64.tar.gz | tar xvz
+        sudo mv migrate /usr/local/bin
+        which migrate
+    
+    - name: Run migrations
+      run: migrate -path db/migration -database "${{ secrets.DB_URL }}" -verbose up
+
+    - name: Test
+      run: go test -v -cover ./...
