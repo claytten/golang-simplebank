@@ -13,4 +13,10 @@ freshdb: dropalldb
 dropalldb:
 	migrate -path ./migration -database "$(DB_URL)" -verbose down
 
-.PHONY: createdb dropdb freshdb dropalldb
+sqlc:
+	sqlc generate
+
+test:
+	go test -v -cover ./...
+
+.PHONY: createdb dropdb freshdb dropalldb sqlc test
