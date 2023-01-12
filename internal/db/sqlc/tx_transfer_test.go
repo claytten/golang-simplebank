@@ -10,14 +10,13 @@ import (
 )
 
 /** start testing normally **/
-func TestTransferTx(t *testing.T) {
+func CreateTransferTx(t *testing.T, n int) (*db.Accounts, *db.Accounts, int64) {
 	store := db.NewStore(testDB)
 
 	account1 := CreateRandomAccount(t)
 	account2 := CreateRandomAccount(t)
 
 	// run n concurrent transactions
-	n := 5
 	amount := int64(10)
 
 	errs := make(chan error)
@@ -55,7 +54,7 @@ func TestTransferTx(t *testing.T) {
 		require.NotZero(t, transfer.CreatedAt)
 		require.NotZero(t, transfer.UpdatedAt)
 
-		_, err = store.GetTransfer(context.Background(), transfer.ID)
+		_, err = store.GetTransferById(context.Background(), transfer.ID)
 		require.NoError(t, err)
 
 		// check entries
@@ -109,6 +108,12 @@ func TestTransferTx(t *testing.T) {
 
 	require.Equal(t, account1.Balance-int64(n)*amount, updateAccount1.Balance)
 	require.Equal(t, account2.Balance+int64(n)*amount, updateAccount2.Balance)
+
+	return &updateAccount1, &updateAccount2, amount * int64(n)
+}
+
+func TestCreateTransferTx(t *testing.T) {
+	CreateTransferTx(t, 5)
 }
 
 func TestTransferTxDeadlock(t *testing.T) {

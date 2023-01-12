@@ -95,12 +95,48 @@ func (q *Queries) GetTotalPageListsTransfersSpesific(ctx context.Context, fromAc
 	return count, err
 }
 
-const getTransfer = `-- name: GetTransfer :one
+const getTransferByFromAccountId = `-- name: GetTransferByFromAccountId :one
+SELECT id, from_account_id, to_account_id, amount, created_at, updated_at FROM transfers WHERE from_account_id = $1 LIMIT 1
+`
+
+func (q *Queries) GetTransferByFromAccountId(ctx context.Context, fromAccountID int64) (Transfers, error) {
+	row := q.db.QueryRowContext(ctx, getTransferByFromAccountId, fromAccountID)
+	var i Transfers
+	err := row.Scan(
+		&i.ID,
+		&i.FromAccountID,
+		&i.ToAccountID,
+		&i.Amount,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getTransferById = `-- name: GetTransferById :one
 SELECT id, from_account_id, to_account_id, amount, created_at, updated_at FROM transfers WHERE id = $1 LIMIT 1
 `
 
-func (q *Queries) GetTransfer(ctx context.Context, id int64) (Transfers, error) {
-	row := q.db.QueryRowContext(ctx, getTransfer, id)
+func (q *Queries) GetTransferById(ctx context.Context, id int64) (Transfers, error) {
+	row := q.db.QueryRowContext(ctx, getTransferById, id)
+	var i Transfers
+	err := row.Scan(
+		&i.ID,
+		&i.FromAccountID,
+		&i.ToAccountID,
+		&i.Amount,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getTransferByToAccountId = `-- name: GetTransferByToAccountId :one
+SELECT id, from_account_id, to_account_id, amount, created_at, updated_at FROM transfers WHERE to_account_id = $1 LIMIT 1
+`
+
+func (q *Queries) GetTransferByToAccountId(ctx context.Context, toAccountID int64) (Transfers, error) {
+	row := q.db.QueryRowContext(ctx, getTransferByToAccountId, toAccountID)
 	var i Transfers
 	err := row.Scan(
 		&i.ID,
