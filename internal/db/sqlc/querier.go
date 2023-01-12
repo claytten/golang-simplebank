@@ -17,7 +17,6 @@ type Querier interface {
 	DeleteAccount(ctx context.Context, id int64) error
 	DeleteAllAccount(ctx context.Context) error
 	GetAccount(ctx context.Context, id int64) (Accounts, error)
-	GetAccountForUpdate(ctx context.Context, id int64) (Accounts, error)
 	GetEntry(ctx context.Context, id int64) (Entries, error)
 	GetListsTransfers(ctx context.Context, arg GetListsTransfersParams) ([]Transfers, error)
 	GetTotalPageListsAccounts(ctx context.Context, owner string) (int64, error)
