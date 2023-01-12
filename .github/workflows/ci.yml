@@ -55,7 +55,7 @@ jobs:
         which migrate
     
     - name: Run migrations
-      run: migrate -path db/migration -database "${{ secrets.DB_URL }}" -verbose up
+      run: migrate -path ./migration -database "${{ secrets.DB_URL }}" -verbose up
 
     - name: Test
       run: go test -v -cover ./...
