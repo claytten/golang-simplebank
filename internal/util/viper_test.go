@@ -13,6 +13,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, config)
 	require.NotEmpty(t, config.Environment)
+	require.NotEmpty(t, config.ServerAddress)
 	require.NotEmpty(t, config.DBDriver)
 	require.NotEmpty(t, config.DBSource)
 
