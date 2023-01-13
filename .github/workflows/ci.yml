@@ -36,6 +36,7 @@ jobs:
         POSTGRES_USER=$(echo "${{ secrets.POSTGRES_USER }}")
         POSTGRES_PASSWORD=$(echo "${{ secrets.POSTGRES_PASSWORD }}")
         POSTGRES_DB=$(echo "${{ secrets.POSTGRES_DB }}")
+        echo "ENVIRONMENT=development"
         echo "DB_SOURCE=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@127.0.0.1:5432/$POSTGRES_DB?sslmode=disable" >> app.env
         echo "DB_DRIVER=postgres" >> app.env
         echo "SERVER_ADDRESS=0.0.0.0:8080" >> app.env
