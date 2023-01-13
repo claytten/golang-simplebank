@@ -28,4 +28,9 @@ func TestHashingPassword(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, hashedPassword2)
 	require.NotEqual(t, hashedPassword, hashedPassword2)
+
+	//testing hashing password if using empty string
+	_, err = util.HashingPassword("")
+	require.Nil(t, err)
+
 }

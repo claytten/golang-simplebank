@@ -18,10 +18,16 @@ func init() {
 }
 
 func RandomInt(min, max int64) int64 {
+	if min < 0 || max < 0 {
+		panic("min and max must be positive")
+	}
 	return min + rand.Int63n(max-min+1)
 }
 
 func RandomString(n int) string {
+	if n < 0 {
+		return ""
+	}
 	var sb strings.Builder
 	k := len(Alphabet)
 
