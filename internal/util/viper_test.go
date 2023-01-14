@@ -16,6 +16,9 @@ func TestLoadConfig(t *testing.T) {
 	require.NotEmpty(t, config.ServerAddress)
 	require.NotEmpty(t, config.DBDriver)
 	require.NotEmpty(t, config.DBSource)
+	require.NotEmpty(t, config.AccessTokenDuration)
+	require.NotEmpty(t, config.TokenSymmetricKey)
+	require.NotEmpty(t, config.RefreshTokenDuration)
 
 	//testing false if app.env is not in the root folder
 	config2, err2 := util.LoadConfig("example", "../..")

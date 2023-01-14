@@ -16,7 +16,10 @@ dropalldb:
 sqlc:
 	sqlc generate
 
+server:
+	go run main.go
+
 test:
 	go test -v -cover ./...
 
-.PHONY: createdb dropdb freshdb dropalldb sqlc test
+.PHONY: createdb dropdb freshdb dropalldb sqlc server test
