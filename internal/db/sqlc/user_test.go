@@ -13,7 +13,8 @@ import (
 
 /** start testing normally **/
 func CreateRandomUser(t *testing.T) db.Users {
-	HashedPassword := util.RandomString(10)
+	HashedPassword, err := util.HashingPassword(util.RandomString(10))
+	require.NoError(t, err)
 	require.NotEmpty(t, HashedPassword)
 
 	arg := db.CreateUserParams{
