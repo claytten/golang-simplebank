@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/claytten/golang-simplebank/internal/api"
-	"github.com/claytten/golang-simplebank/internal/api/middlewares"
 	db "github.com/claytten/golang-simplebank/internal/db/sqlc"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -20,7 +19,6 @@ const (
 )
 
 func UpdateUserProfileRoute(api *api.Server, userRg *gin.RouterGroup) {
-	userRg.Use(middlewares.CheckOwnUserUpdate(api.DB))
 	userRg.PUT("/profile", UpdateUserProfileHandler(api))
 }
 

@@ -6,14 +6,12 @@ import (
 	"time"
 
 	"github.com/claytten/golang-simplebank/internal/api"
-	"github.com/claytten/golang-simplebank/internal/api/middlewares"
 	db "github.com/claytten/golang-simplebank/internal/db/sqlc"
 	"github.com/claytten/golang-simplebank/internal/util"
 	"github.com/gin-gonic/gin"
 )
 
 func UpdateUserPasswordRoute(api *api.Server, userRg *gin.RouterGroup) {
-	userRg.Use(middlewares.CheckOwnUserUpdate(api.DB))
 	userRg.PUT("/profile/password", UpdateUserPasswordHandler(api))
 }
 
