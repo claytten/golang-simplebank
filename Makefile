@@ -20,6 +20,9 @@ server:
 	go run main.go
 
 test:
-	go test -v -cover ./...
+	go clean -testcache && go test -v -cover ./...
 
-.PHONY: createdb dropdb freshdb dropalldb sqlc server test
+mock:
+	mockgen -package mockdb -destination internal/db/mock/store.go github.com/claytten/golang-simplebank/internal/db/sqlc Store
+
+.PHONY: createdb dropdb freshdb dropalldb sqlc server test mock

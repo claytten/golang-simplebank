@@ -7,6 +7,7 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-gonic/gin v1.8.2
 	github.com/go-playground/validator/v10 v10.11.1
+	github.com/golang/mock v1.4.4
 	github.com/google/uuid v1.1.2
 	github.com/lib/pq v1.10.7
 	github.com/o1egl/paseto v1.0.0
