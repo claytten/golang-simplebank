@@ -21,6 +21,7 @@ func (h *Handler) ApplyAllAuthRoutes() {
 	{
 		auth.PostLoginUserRoute(h.api, user)
 		user.Use(middlewares.AuthMiddleware(h.api.Token))
+		auth.PostCreateUserRoute(h.api, user)
 		auth.GetUserRoute(h.api, user)
 		auth.UpdateUserProfileRoute(h.api, user)
 		auth.UpdateUserPasswordRoute(h.api, user)
