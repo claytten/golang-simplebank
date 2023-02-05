@@ -3,11 +3,33 @@ package auth
 import (
 	"database/sql"
 	"net/http"
+	"time"
 
 	"github.com/claytten/golang-simplebank/internal/api"
+	db "github.com/claytten/golang-simplebank/internal/db/sqlc"
 	"github.com/claytten/golang-simplebank/internal/util"
 	"github.com/gin-gonic/gin"
 )
+
+type UserResponse struct {
+	Username          string    `json:"username"`
+	FullName          string    `json:"full_name"`
+	Email             string    `json:"email"`
+	PasswordChangedAt time.Time `json:"password_changed_at"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
+}
+
+func NewUserResponse(user db.Users) *UserResponse {
+	return &UserResponse{
+		Username:          user.Username,
+		FullName:          user.FullName,
+		Email:             user.Email,
+		PasswordChangedAt: user.PasswordChangedAt,
+		CreatedAt:         user.CreatedAt,
+		UpdatedAt:         user.UpdatedAt,
+	}
+}
 
 type loginUserRequest struct {
 	Email    string `json:"email" binding:"required"`
