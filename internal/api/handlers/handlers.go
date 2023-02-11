@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/claytten/golang-simplebank/internal/api"
+	"github.com/claytten/golang-simplebank/internal/api/handlers/account"
 	"github.com/claytten/golang-simplebank/internal/api/handlers/auth"
 	"github.com/claytten/golang-simplebank/internal/api/middlewares"
 	"github.com/gin-gonic/gin"
@@ -29,5 +30,21 @@ func (h *Handler) ApplyAllAuthRoutes() {
 		user.Use(middlewares.CheckOwnUserUpdate(h.api.DB))
 		auth.UpdateUserProfileRoute(h.api, user)
 		auth.UpdateUserPasswordRoute(h.api, user)
+	}
+}
+
+func (h *Handler) ApplyAllAccountRoutes() {
+	accounts := h.rg.Group("accounts")
+	{
+		accounts.Use(middlewares.AuthMiddleware(h.api.Token))
+		// just middleware basic authentication
+		account.ListsAccountsRoute(h.api, accounts)
+		account.GetAccountRoute(h.api, accounts)
+
+		// adding middleware for checking username and old password
+		accounts.Use(middlewares.CheckOwnUserUpdate(h.api.DB))
+		account.PostCreateAccountRoute(h.api, accounts)
+		account.PutUpdateAccountRoute(h.api, accounts)
+		account.DeleteAccountRoute(h.api, accounts)
 	}
 }
