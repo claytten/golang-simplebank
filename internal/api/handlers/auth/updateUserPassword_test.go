@@ -34,7 +34,19 @@ func (e *eqUpdatePassUserParamsMatcher) Matches(x interface{}) bool {
 	}
 
 	err := util.ComparePassword(arg.HashedPassword.String, e.password)
-	if err != nil || arg.PasswordChangedAt.Time == e.arg.PasswordChangedAt.Time || arg.UpdatedAt == e.arg.UpdatedAt {
+	if err != nil {
+		return false
+	}
+
+	argPassChangedAt := arg.PasswordChangedAt.Time.Round(time.Second)
+	expected := e.arg.PasswordChangedAt.Time.Round(time.Second)
+	if ok := argPassChangedAt.Equal(expected); !ok {
+		return false
+	}
+
+	argUpdatedAt := arg.UpdatedAt.Round(time.Second)
+	expected = e.arg.UpdatedAt.Round(time.Second)
+	if ok := argUpdatedAt.Equal(expected); !ok {
 		return false
 	}
 
@@ -170,6 +182,26 @@ func TestUpdateUserPasswordHandler(t *testing.T) {
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusUnauthorized, recorder.Code)
+			},
+		},
+
+		// TODO: 500 query error
+		{
+			name: "500 query error",
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, oldUser.Email, time.Minute)
+				request.Header.Set(authorizationUsername, oldUser.Username)
+				request.Header.Set(authorizationOldPassword, oldPassword) //user plain password (oldpassword)
+				request.Header.Set(authorizationPassword, newPassword)    //user new password
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().GetUserUsingEmail(gomock.Any(), gomock.Eq(oldUser.Email)).Return(oldUser, nil).AnyTimes()
+				store.EXPECT().GetUser(gomock.Any(), gomock.Eq(oldUser.Username)).Return(oldUser, nil).AnyTimes()
+
+				store.EXPECT().UpdateUser(gomock.Any(), gomock.Any()).Return(db.Users{}, sql.ErrConnDone).Times(1)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 		},
 	}

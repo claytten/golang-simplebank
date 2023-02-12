@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 	"time"
 
@@ -21,25 +23,53 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func RequireBodyMatchProfile(t *testing.T, body *bytes.Buffer, user db.Users) {
-	data, err := io.ReadAll(body)
-	require.NoError(t, err)
-
-	var gotUser db.Users
-	err = json.Unmarshal(data, &gotUser)
-	require.NoError(t, err)
-	require.Equal(t, user.FullName, gotUser.FullName)
-	require.Equal(t, user.Email, gotUser.Email)
+type EqUpdateUserParamsMatcher struct {
+	arg db.UpdateUserParams
 }
+
+func (e *EqUpdateUserParamsMatcher) Matches(x interface{}) bool {
+	arg, ok := x.(db.UpdateUserParams)
+	if !ok {
+		return false
+	}
+
+	if arg.FullName.String != e.arg.FullName.String && arg.Email.String != e.arg.Email.String {
+		return false
+	}
+
+	argUpdatedAt := arg.UpdatedAt.Round(time.Second)
+	expected := e.arg.UpdatedAt.Round(time.Second)
+	if ok := argUpdatedAt.Equal(expected); !ok {
+		return false
+	}
+
+	e.arg.FullName.String = arg.FullName.String
+	e.arg.Email.String = arg.Email.String
+	e.arg.UpdatedAt = arg.UpdatedAt
+
+	return reflect.DeepEqual(e.arg, arg)
+}
+
+func (e *EqUpdateUserParamsMatcher) String() string {
+	return fmt.Sprintf("matches arg %v", e.arg)
+}
+
+func EqUpdateUserParams(arg db.UpdateUserParams) gomock.Matcher {
+	return &EqUpdateUserParamsMatcher{arg}
+}
+
 func TestUpdateUserProfileHandler(t *testing.T) {
+	now := time.Now()
 	user, plainPassword := util.RandomUser(t)
 
 	newUser := user
 	newUser.FullName = util.RandomOwner()
 	newUser.Email = util.RandomEmail()
+	newUser.UpdatedAt = now
 
 	newUser1 := user
 	newUser1.Email = util.RandomEmail()
+	newUser1.UpdatedAt = now
 
 	tests := []struct {
 		name          string
@@ -63,7 +93,20 @@ func TestUpdateUserProfileHandler(t *testing.T) {
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().GetUserUsingEmail(gomock.Any(), gomock.Eq(user.Email)).Return(user, nil).AnyTimes()
 				store.EXPECT().GetUser(gomock.Any(), gomock.Eq(user.Username)).Return(user, nil).AnyTimes()
-				store.EXPECT().UpdateUser(gomock.Any(), gomock.Any()).
+
+				arg := db.UpdateUserParams{
+					Username: user.Username,
+					FullName: sql.NullString{
+						String: newUser.Username,
+						Valid:  true,
+					},
+					Email: sql.NullString{
+						String: newUser.Email,
+						Valid:  true,
+					},
+					UpdatedAt: now,
+				}
+				store.EXPECT().UpdateUser(gomock.Any(), EqUpdateUserParams(arg)).
 					Times(1).Return(newUser, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
@@ -87,7 +130,20 @@ func TestUpdateUserProfileHandler(t *testing.T) {
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().GetUserUsingEmail(gomock.Any(), gomock.Eq(user.Email)).Times(1).Return(user, nil)
 				store.EXPECT().GetUser(gomock.Any(), gomock.Eq(user.Username)).Times(1).Return(user, nil)
-				store.EXPECT().UpdateUser(gomock.Any(), gomock.Any()).
+
+				arg := db.UpdateUserParams{
+					Username: newUser1.Username,
+					FullName: sql.NullString{
+						String: newUser1.Username,
+						Valid:  true,
+					},
+					Email: sql.NullString{
+						String: newUser1.Email,
+						Valid:  true,
+					},
+					UpdatedAt: now,
+				}
+				store.EXPECT().UpdateUser(gomock.Any(), EqUpdateUserParams(arg)).
 					Times(1).Return(newUser1, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
@@ -183,6 +239,28 @@ func TestUpdateUserProfileHandler(t *testing.T) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
+
+		// TODO: 500 query error
+		{
+			name: "500 query error",
+			body: gin.H{
+				"full_name": newUser.FullName,
+				"email":     newUser.Email,
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Email, time.Minute)
+				request.Header.Set(authorizationUsername, user.Username)
+				request.Header.Set(authorizationOldPassword, plainPassword)
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().GetUserUsingEmail(gomock.Any(), gomock.Eq(user.Email)).Return(user, nil).AnyTimes()
+				store.EXPECT().GetUser(gomock.Any(), gomock.Eq(user.Username)).Return(user, nil).AnyTimes()
+				store.EXPECT().UpdateUser(gomock.Any(), gomock.Any()).Times(1).Return(newUser, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -209,4 +287,15 @@ func TestUpdateUserProfileHandler(t *testing.T) {
 			tt.checkResponse(recorder)
 		})
 	}
+}
+
+func RequireBodyMatchProfile(t *testing.T, body *bytes.Buffer, user db.Users) {
+	data, err := io.ReadAll(body)
+	require.NoError(t, err)
+
+	var gotUser db.Users
+	err = json.Unmarshal(data, &gotUser)
+	require.NoError(t, err)
+	require.Equal(t, user.FullName, gotUser.FullName)
+	require.Equal(t, user.Email, gotUser.Email)
 }
