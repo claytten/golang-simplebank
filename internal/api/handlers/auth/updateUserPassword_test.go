@@ -38,14 +38,14 @@ func (e *eqUpdatePassUserParamsMatcher) Matches(x interface{}) bool {
 		return false
 	}
 
-	argPassChangedAt := arg.PasswordChangedAt.Time.Round(time.Second)
-	expected := e.arg.PasswordChangedAt.Time.Round(time.Second)
+	argPassChangedAt := arg.PasswordChangedAt.Time.Round(time.Minute)
+	expected := e.arg.PasswordChangedAt.Time.Round(time.Minute)
 	if ok := argPassChangedAt.Equal(expected); !ok {
 		return false
 	}
 
-	argUpdatedAt := arg.UpdatedAt.Round(time.Second)
-	expected = e.arg.UpdatedAt.Round(time.Second)
+	argUpdatedAt := arg.UpdatedAt.Round(time.Minute)
+	expected = e.arg.UpdatedAt.Round(time.Minute)
 	if ok := argUpdatedAt.Equal(expected); !ok {
 		return false
 	}

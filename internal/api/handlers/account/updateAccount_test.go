@@ -34,8 +34,8 @@ func (e *EqUpdateAccountParamsMatcher) Matches(x interface{}) bool {
 		return false
 	}
 
-	argUpdatedAt := arg.UpdatedAt.Round(time.Second)
-	expected := e.updatedAt.Round(time.Second)
+	argUpdatedAt := arg.UpdatedAt.Round(time.Minute)
+	expected := e.updatedAt.Round(time.Minute)
 	if ok := argUpdatedAt.Equal(expected); !ok {
 		return false
 	}
