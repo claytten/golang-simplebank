@@ -4,12 +4,10 @@ import (
 	"net/http"
 
 	"github.com/claytten/golang-simplebank/internal/api"
-	"github.com/claytten/golang-simplebank/internal/api/middlewares"
 	"github.com/gin-gonic/gin"
 )
 
 func DeleteAccountRoute(api *api.Server, userRg *gin.RouterGroup) {
-	userRg.Use(middlewares.CheckOwnUserUpdate(api.DB))
 	userRg.DELETE("/delete", DeleteAccountHandler(api))
 }
 

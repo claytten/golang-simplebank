@@ -221,8 +221,8 @@ func TestPostCreateAccountHandler(t *testing.T) {
 			data, err := json.Marshal(tt.body)
 			require.NoError(t, err)
 
-			getUserPath := "/api/v1/accounts/create"
-			request, err := http.NewRequest(http.MethodPost, getUserPath, bytes.NewReader(data))
+			getAccountPath := "/api/v1/accounts/create"
+			request, err := http.NewRequest(http.MethodPost, getAccountPath, bytes.NewReader(data))
 			require.NoError(t, err)
 
 			tt.setupAuth(t, request, server.Token)

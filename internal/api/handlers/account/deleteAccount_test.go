@@ -12,16 +12,14 @@ import (
 	"github.com/claytten/golang-simplebank/internal/api/routes"
 	"github.com/claytten/golang-simplebank/internal/api/token"
 	mockdb "github.com/claytten/golang-simplebank/internal/db/mock"
-	db "github.com/claytten/golang-simplebank/internal/db/sqlc"
 	"github.com/claytten/golang-simplebank/internal/util"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetAccountHandler(t *testing.T) {
-	user, _ := util.RandomUser(t)
+func TestDeleteAccountHandler(t *testing.T) {
+	user, oldPassword := util.RandomUser(t)
 	account := util.RandomAccount(user.Username)
-
 	tests := []struct {
 		name          string
 		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
@@ -33,33 +31,22 @@ func TestGetAccountHandler(t *testing.T) {
 			name: "200 OK",
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Email, time.Minute)
+				request.Header.Set(authorizationUsername, user.Username)
+				request.Header.Set(authorizationOldPassword, oldPassword)
 				request.Header.Set("id", strconv.Itoa(int(account.ID)))
 			},
 			buildStubs: func(store *mockdb.MockStore) {
-				store.EXPECT().GetAccount(gomock.Any(), gomock.Eq(account.ID)).Return(account, nil).Times(1)
+				store.EXPECT().GetUserUsingEmail(gomock.Any(), gomock.Eq(user.Email)).Return(user, nil).AnyTimes()
+				store.EXPECT().DeleteAccount(gomock.Any(), gomock.Eq(account.ID)).Return(nil).Times(1)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
 			},
 		},
 
-		// TODO: 400 missing some header
-		{
-			name: "400 missing some header",
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Email, time.Minute)
-			},
-			buildStubs: func(store *mockdb.MockStore) {
-				store.EXPECT().GetAccount(gomock.Any(), gomock.Any()).Return(db.Accounts{}, nil).Times(0)
-			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
-			},
-		},
-
 		// TODO: 401 no token
 		{
-			name:       "401 missing token",
+			name:       "401 no token",
 			setupAuth:  func(t *testing.T, request *http.Request, tokenMaker token.Maker) {},
 			buildStubs: func(store *mockdb.MockStore) {},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
@@ -67,18 +54,19 @@ func TestGetAccountHandler(t *testing.T) {
 			},
 		},
 
-		// TODO: 404 user not found
+		// TODO: 400 no id header
 		{
-			name: "404 user not found",
+			name: "400 no id header",
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Email, time.Minute)
-				request.Header.Set("id", "1234567")
+				request.Header.Set(authorizationUsername, user.Username)
+				request.Header.Set(authorizationOldPassword, oldPassword)
 			},
 			buildStubs: func(store *mockdb.MockStore) {
-				store.EXPECT().GetAccount(gomock.Any(), gomock.Any()).Return(db.Accounts{}, sql.ErrNoRows)
+				store.EXPECT().GetUserUsingEmail(gomock.Any(), gomock.Eq(user.Email)).Return(user, nil).AnyTimes()
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusNotFound, recorder.Code)
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 
@@ -87,10 +75,13 @@ func TestGetAccountHandler(t *testing.T) {
 			name: "500 query error",
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Email, time.Minute)
+				request.Header.Set(authorizationUsername, user.Username)
+				request.Header.Set(authorizationOldPassword, oldPassword)
 				request.Header.Set("id", strconv.Itoa(int(account.ID)))
 			},
 			buildStubs: func(store *mockdb.MockStore) {
-				store.EXPECT().GetAccount(gomock.Any(), gomock.Any()).Return(db.Accounts{}, sql.ErrConnDone).Times(1)
+				store.EXPECT().GetUserUsingEmail(gomock.Any(), gomock.Eq(user.Email)).Return(user, nil).AnyTimes()
+				store.EXPECT().DeleteAccount(gomock.Any(), gomock.Any()).Return(sql.ErrConnDone).Times(1)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
@@ -108,8 +99,8 @@ func TestGetAccountHandler(t *testing.T) {
 			server := api.NewTestServer(t, store)
 			recorder := httptest.NewRecorder()
 
-			getAccountPath := "/api/v1/accounts/getAccount"
-			request, err := http.NewRequest(http.MethodGet, getAccountPath, nil)
+			getAccountPath := "/api/v1/accounts/delete"
+			request, err := http.NewRequest(http.MethodDelete, getAccountPath, nil)
 			require.NoError(t, err)
 
 			tt.setupAuth(t, request, server.Token)

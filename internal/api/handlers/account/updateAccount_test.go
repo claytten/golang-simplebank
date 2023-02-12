@@ -5,9 +5,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
+	"strconv"
 	"testing"
 	"time"
 
@@ -17,26 +18,53 @@ import (
 	mockdb "github.com/claytten/golang-simplebank/internal/db/mock"
 	db "github.com/claytten/golang-simplebank/internal/db/sqlc"
 	"github.com/claytten/golang-simplebank/internal/util"
+	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
 
-func TestListsAccountsHandler(t *testing.T) {
-	user, _ := util.RandomUser(t)
+type EqUpdateAccountParamsMatcher struct {
+	arg       db.UpdateAccountParams
+	updatedAt time.Time
+}
 
-	n := 5
-	accounts := make([]db.Accounts, n)
-	for i := 0; i < n; i++ {
-		accounts[i] = util.RandomAccount(user.Username)
+func (e *EqUpdateAccountParamsMatcher) Matches(x interface{}) bool {
+	arg, ok := x.(db.UpdateAccountParams)
+	if !ok {
+		return false
 	}
 
-	type Query struct {
-		PageID   int
-		PageSize int
+	argUpdatedAt := arg.UpdatedAt.Round(time.Second)
+	expected := e.updatedAt.Round(time.Second)
+	if ok := argUpdatedAt.Equal(expected); !ok {
+		return false
 	}
+
+	e.arg.UpdatedAt = arg.UpdatedAt
+	return reflect.DeepEqual(e.arg, arg)
+}
+
+func (e *EqUpdateAccountParamsMatcher) String() string {
+	return fmt.Sprintf("matches arg %v and password %v", e.arg, e.updatedAt)
+}
+
+func EqUpdateAccountParams(arg db.UpdateAccountParams, updatedAt time.Time) gomock.Matcher {
+	return &EqUpdateAccountParamsMatcher{arg, updatedAt}
+}
+
+func TestPutUpdateAccountHandler(t *testing.T) {
+	user, oldPassword := util.RandomUser(t)
+	account := util.RandomAccount(user.Username)
+	now := time.Now()
+	addNewBalance := int64(200)
+
+	newAccount := account
+	newAccount.Balance = addNewBalance
+	newAccount.UpdatedAt = now
+
 	tests := []struct {
 		name          string
-		query         Query
+		body          gin.H
 		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 		buildStubs    func(store *mockdb.MockStore)
 		checkResponse func(recorder *httptest.ResponseRecorder)
@@ -44,71 +72,33 @@ func TestListsAccountsHandler(t *testing.T) {
 		// TODO: 200 OK
 		{
 			name: "200 OK",
-			query: Query{
-				PageID:   1,
-				PageSize: n,
+			body: gin.H{
+				"balance": addNewBalance,
 			},
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Email, time.Minute)
+				request.Header.Set(authorizationUsername, user.Username)
+				request.Header.Set(authorizationOldPassword, oldPassword)
+				request.Header.Set("id", strconv.Itoa(int(account.ID)))
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().GetUserUsingEmail(gomock.Any(), gomock.Eq(user.Email)).Return(user, nil).AnyTimes()
 
-				arg := db.ListsAccountsParams{
-					Owner:  user.Username,
-					Limit:  int32(n),
-					Offset: 0,
+				arg := db.UpdateAccountParams{
+					ID:      account.ID,
+					Balance: addNewBalance,
 				}
-
-				store.EXPECT().ListsAccounts(gomock.Any(), gomock.Eq(arg)).Return(accounts, nil).Times(1)
-				store.EXPECT().GetTotalPageListsAccounts(gomock.Any(), gomock.Eq(user.Username)).Return(int64(n), nil).Times(1)
+				store.EXPECT().UpdateAccount(gomock.Any(), EqUpdateAccountParams(arg, now)).Return(newAccount, nil).Times(1)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
-				RequireBodyMatchAccounts(t, recorder.Body, accounts, float64(1), float64(n))
-			},
-		},
-
-		// TODO: 400 InvalidPageID
-		{
-			name: "400 invalid page id",
-			query: Query{
-				PageID:   -1,
-				PageSize: n,
-			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Email, time.Minute)
-			},
-			buildStubs: func(store *mockdb.MockStore) {
-				store.EXPECT().GetUserUsingEmail(gomock.Any(), gomock.Eq(user.Email)).Return(user, nil).AnyTimes()
-			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
-			},
-		},
-
-		// TODO: 400 InvalidPageSize
-		{
-			name: "400 invalid page size",
-			query: Query{
-				PageID:   1,
-				PageSize: 1000000,
-			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Email, time.Minute)
-			},
-			buildStubs: func(store *mockdb.MockStore) {
-				store.EXPECT().GetUserUsingEmail(gomock.Any(), gomock.Eq(user.Email)).Return(user, nil).AnyTimes()
-			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 
 		// TODO: 401 no token
 		{
-			name:       "400 no token",
-			query:      Query{},
+			name:       "401 no token",
+			body:       gin.H{},
 			setupAuth:  func(t *testing.T, request *http.Request, tokenMaker token.Maker) {},
 			buildStubs: func(store *mockdb.MockStore) {},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
@@ -116,20 +106,58 @@ func TestListsAccountsHandler(t *testing.T) {
 			},
 		},
 
-		// TODO: 500 query error
+		// TODO: 400 missing id header
 		{
-			name: "500 query error",
-			query: Query{
-				PageID:   1,
-				PageSize: n,
+			name: "400 no id header",
+			body: gin.H{
+				"balance": addNewBalance,
 			},
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Email, time.Minute)
+				request.Header.Set(authorizationUsername, user.Username)
+				request.Header.Set(authorizationOldPassword, oldPassword)
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().GetUserUsingEmail(gomock.Any(), gomock.Eq(user.Email)).Return(user, nil).AnyTimes()
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
 
-				store.EXPECT().ListsAccounts(gomock.Any(), gomock.Any()).Return([]db.Accounts{}, sql.ErrConnDone).Times(1)
+		// TODO: 400 missing body balance
+		{
+			name: "400 missing body balance",
+			body: gin.H{},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Email, time.Minute)
+				request.Header.Set(authorizationUsername, user.Username)
+				request.Header.Set(authorizationOldPassword, oldPassword)
+				request.Header.Set("id", strconv.Itoa(int(account.ID)))
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().GetUserUsingEmail(gomock.Any(), gomock.Eq(user.Email)).Return(user, nil).AnyTimes()
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+
+		// TODO: 500 run query
+		{
+			name: "500 error query",
+			body: gin.H{
+				"balance": addNewBalance,
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Email, time.Minute)
+				request.Header.Set(authorizationUsername, user.Username)
+				request.Header.Set(authorizationOldPassword, oldPassword)
+				request.Header.Set("id", strconv.Itoa(int(account.ID)))
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().GetUserUsingEmail(gomock.Any(), gomock.Eq(user.Email)).Return(user, nil).AnyTimes()
+				store.EXPECT().UpdateAccount(gomock.Any(), gomock.Any()).Return(db.Accounts{}, sql.ErrConnDone).Times(1)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
@@ -147,15 +175,13 @@ func TestListsAccountsHandler(t *testing.T) {
 			server := api.NewTestServer(t, store)
 			recorder := httptest.NewRecorder()
 
-			getAccountPath := "/api/v1/accounts/lists"
-			request, err := http.NewRequest(http.MethodGet, getAccountPath, nil)
+			// body data to json
+			data, err := json.Marshal(tt.body)
 			require.NoError(t, err)
 
-			// Add query parameters to request URL
-			q := request.URL.Query()
-			q.Add("page_id", fmt.Sprintf("%d", tt.query.PageID))
-			q.Add("page_size", fmt.Sprintf("%d", tt.query.PageSize))
-			request.URL.RawQuery = q.Encode()
+			getAccountPath := "/api/v1/accounts/update"
+			request, err := http.NewRequest(http.MethodPut, getAccountPath, bytes.NewReader(data))
+			require.NoError(t, err)
 
 			tt.setupAuth(t, request, server.Token)
 			routes.ApplyAllPublicRoutes(server)
@@ -163,25 +189,4 @@ func TestListsAccountsHandler(t *testing.T) {
 			tt.checkResponse(recorder)
 		})
 	}
-}
-
-func RequireBodyMatchAccounts(t *testing.T, body *bytes.Buffer, accounts []db.Accounts, current_page, limit float64) {
-	data, err := io.ReadAll(body)
-	require.NoError(t, err)
-
-	var gotData map[string]interface{}
-	err = json.Unmarshal(data, &gotData)
-	require.NoError(t, err)
-
-	require.Equal(t, current_page, gotData["current_page"])
-	require.Equal(t, limit, gotData["limit"])
-
-	for i, v := range gotData["data"].([]interface{}) {
-		item, _ := v.(map[string]interface{})
-		require.Equal(t, float64(accounts[i].ID), item["id"])
-		require.Equal(t, float64(accounts[i].Balance), item["balance"])
-		require.Equal(t, accounts[i].Owner, item["owner"])
-		require.Equal(t, accounts[i].Currency, item["currency"])
-	}
-
 }
