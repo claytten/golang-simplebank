@@ -21,4 +21,5 @@ func ApplyAllPublicRoutes(s *api.Server) {
 	handlers := handlers.NewHandler(s, rg1)
 
 	handlers.ApplyAllAuthRoutes()
+	handlers.ApplyAllAccountRoutes()
 }
