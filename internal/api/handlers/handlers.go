@@ -46,5 +46,8 @@ func (h *Handler) ApplyAllAccountRoutes() {
 		account.PostCreateAccountRoute(h.api, accounts)
 		account.PutUpdateAccountRoute(h.api, accounts)
 		account.DeleteAccountRoute(h.api, accounts)
+
+		// transfers
+		account.PostCreateTransferAccountRoute(h.api, accounts)
 	}
 }
