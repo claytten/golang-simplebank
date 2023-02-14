@@ -21,10 +21,10 @@ func (h *Handler) ApplyAllAuthRoutes() {
 	user := h.rg.Group("auth")
 	{
 		auth.PostLoginUserRoute(h.api, user)
+		auth.PostCreateUserRoute(h.api, user)
 		user.Use(middlewares.AuthMiddleware(h.api.Token))
 		// just middleware basic authentication
 		auth.GetUserRoute(h.api, user)
-		auth.PostCreateUserRoute(h.api, user)
 
 		// adding middleware for checking username and old password
 		user.Use(middlewares.CheckOwnUserUpdate(h.api.DB))
