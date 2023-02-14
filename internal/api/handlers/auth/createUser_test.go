@@ -10,11 +10,9 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"testing"
-	"time"
 
 	"github.com/claytten/golang-simplebank/internal/api"
 	"github.com/claytten/golang-simplebank/internal/api/routes"
-	"github.com/claytten/golang-simplebank/internal/api/token"
 	mockdb "github.com/claytten/golang-simplebank/internal/db/mock"
 	db "github.com/claytten/golang-simplebank/internal/db/sqlc"
 	"github.com/claytten/golang-simplebank/internal/util"
@@ -58,7 +56,6 @@ func TestPostCreateUserHandler(t *testing.T) {
 	tests := []struct {
 		name          string
 		body          gin.H
-		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 		buildStubs    func(store *mockdb.MockStore)
 		checkResponse func(recorder *httptest.ResponseRecorder)
 	}{
@@ -70,9 +67,6 @@ func TestPostCreateUserHandler(t *testing.T) {
 				"password":  password,
 				"full_name": user.FullName,
 				"email":     user.Email,
-			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Email, time.Minute)
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				arg := db.CreateUserParams{
@@ -91,11 +85,8 @@ func TestPostCreateUserHandler(t *testing.T) {
 
 		// TODO: 400 One or multiple params missing
 		{
-			name: "400 missing params",
-			body: gin.H{},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Email, time.Minute)
-			},
+			name:       "400 missing params",
+			body:       gin.H{},
 			buildStubs: func(store *mockdb.MockStore) {},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
@@ -110,9 +101,6 @@ func TestPostCreateUserHandler(t *testing.T) {
 				"password":  "123",
 				"full_name": user.FullName,
 				"email":     user.Email,
-			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Email, time.Minute)
 			},
 			buildStubs: func(store *mockdb.MockStore) {},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
@@ -129,9 +117,6 @@ func TestPostCreateUserHandler(t *testing.T) {
 				"full_name": user.FullName,
 				"email":     "example#invalid",
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Email, time.Minute)
-			},
 			buildStubs: func(store *mockdb.MockStore) {},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
@@ -147,9 +132,6 @@ func TestPostCreateUserHandler(t *testing.T) {
 				"full_name": user.FullName,
 				"email":     user.Email,
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Email, time.Minute)
-			},
 			buildStubs: func(store *mockdb.MockStore) {},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
@@ -164,9 +146,6 @@ func TestPostCreateUserHandler(t *testing.T) {
 				"password":  password,
 				"full_name": user.FullName,
 				"email":     user.Email,
-			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Email, time.Minute)
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().CreateUser(gomock.Any(), gomock.Any()).Times(1).Return(db.Users{}, &pq.Error{Code: "23505"})
@@ -184,9 +163,6 @@ func TestPostCreateUserHandler(t *testing.T) {
 				"password":  password,
 				"full_name": user.FullName,
 				"email":     user.Email,
-			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Email, time.Minute)
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 
@@ -216,7 +192,6 @@ func TestPostCreateUserHandler(t *testing.T) {
 			request, err := http.NewRequest(http.MethodPost, getUserPath, bytes.NewReader(data))
 			require.NoError(t, err)
 
-			tt.setupAuth(t, request, server.Token)
 			routes.ApplyAllPublicRoutes(server)
 			server.Engine.ServeHTTP(recorder, request)
 			tt.checkResponse(recorder)
