@@ -14,13 +14,13 @@ func PostCreateTransferAccountRoute(api *api.Server, userRg *gin.RouterGroup) {
 }
 
 type TransferHeaderRequest struct {
-	FromAccountID int64 `header:"from_account_id" binding:"required"`
-	ToAccountID   int64 `header:"to_account_id" bindin:"required"`
+	FromAccountID int64 `header:"from_account_id" binding:"required,min=1"`
+	ToAccountID   int64 `header:"to_account_id" binding:"required,min=1"`
 }
 
 type TransferBodyRequest struct {
-	Amount   int64  `json:"amount" binding:"required,min=1"`
-	Currency string `json:"currency" binding:"required"`
+	Amount   int64  `json:"amount" binding:"required,gt=0"`
+	Currency string `json:"currency" binding:"required,currency"`
 }
 
 func PostCreateTransferAccountHandler(s *api.Server) gin.HandlerFunc {
