@@ -9,6 +9,7 @@ import (
 	db "github.com/claytten/golang-simplebank/internal/db/sqlc"
 	"github.com/claytten/golang-simplebank/internal/util"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type UserResponse struct {
@@ -37,9 +38,12 @@ type loginUserRequest struct {
 }
 
 type loginUserResponse struct {
-	AccessToken  string       `json:"access_token"`
-	RefreshToken string       `json:"refresh_token"`
-	User         UserResponse `json:"user"`
+	SessionID             uuid.UUID    `json:"session_id"`
+	AccessToken           string       `json:"access_token"`
+	AccessTokenExpiresAt  time.Time    `json:"access_token_expires_at"`
+	RefreshToken          string       `json:"refresh_token"`
+	RefreshTokenExpiresAt time.Time    `json:"refresh_token_expires_at"`
+	User                  UserResponse `json:"user"`
 }
 
 func PostLoginUserRoute(api *api.Server, userRg *gin.RouterGroup) {
@@ -71,22 +75,41 @@ func PostLoginUserHandler(s *api.Server) gin.HandlerFunc {
 			return
 		}
 
-		accessToken, _, err := s.Token.CreateToken(user.Email, s.Config.AccessTokenDuration)
+		accessToken, accessPayload, err := s.Token.CreateToken(user.Email, s.Config.AccessTokenDuration)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
-		refreshToken, _, err := s.Token.CreateToken(user.Email, s.Config.AccessTokenDuration)
+		refreshToken, refreshPayload, err := s.Token.CreateToken(user.Email, s.Config.RefreshTokenDuration)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		session, err := s.DB.CreateSession(ctx, db.CreateSessionParams{
+			ID:           refreshPayload.ID,
+			Email:        user.Email,
+			RefreshToken: refreshToken,
+			UserAgent:    ctx.Request.UserAgent(),
+			ClientIp:     ctx.ClientIP(),
+			IsBlocked:    false,
+			ExpiresAt:    refreshPayload.ExpiredAt,
+			CreatedAt:    time.Now(),
+		})
+
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
 		res := loginUserResponse{
-			AccessToken:  accessToken,
-			RefreshToken: refreshToken,
-			User:         *NewUserResponse(user),
+			SessionID:             session.ID,
+			AccessToken:           accessToken,
+			AccessTokenExpiresAt:  accessPayload.ExpiredAt,
+			RefreshToken:          refreshToken,
+			RefreshTokenExpiresAt: refreshPayload.ExpiredAt,
+			User:                  *NewUserResponse(user),
 		}
 
 		ctx.JSON(http.StatusOK, res)

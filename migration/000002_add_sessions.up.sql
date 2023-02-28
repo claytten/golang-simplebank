@@ -1,6 +1,6 @@
 CREATE TABLE "sessions" (
   "id" uuid PRIMARY KEY,
-  "username" varchar NOT NULL,
+  "email" varchar NOT NULL,
   "refresh_token" varchar NOT NULL,
   "user_agent" varchar NOT NULL,
   "client_ip" varchar NOT NULL,
@@ -9,4 +9,4 @@ CREATE TABLE "sessions" (
   "created_at" timestamptz NOT NULL DEFAULT (now())
 );
 
-ALTER TABLE "sessions" ADD FOREIGN KEY ("username") REFERENCES "users" ("username");
+ALTER TABLE "sessions" ADD FOREIGN KEY ("email") REFERENCES "users" ("email");
