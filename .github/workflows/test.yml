@@ -47,6 +47,11 @@ jobs:
         echo "TOKEN_SYMMETRIC_KEY=$TOKEN_SYMMETRIC_KEY" >> app.env
         echo "ACCESS_TOKEN_DURATION=$ACCESS_TOKEN_DURATION" >> app.env
         echo "REFRESH_TOKEN_DURATION=$REFRESH_TOKEN_DURATION" >> app.env
+    - uses: szenius/set-timezone@v1.0
+      with:
+        timezoneLinux: "Asia/Jakarta"
+        timezoneMacos: "Asia/Jakarta"
+        timezoneWindows: "Jakarta Standard Time"
 
     - name: Set up Go
       uses: actions/setup-go@v3

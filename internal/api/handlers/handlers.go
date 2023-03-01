@@ -22,6 +22,7 @@ func (h *Handler) ApplyAllAuthRoutes() {
 	{
 		auth.PostLoginUserRoute(h.api, user)
 		auth.PostCreateUserRoute(h.api, user)
+		auth.PostRenewTokenUserRoute(h.api, user)
 		user.Use(middlewares.AuthMiddleware(h.api.Token))
 		// just middleware basic authentication
 		auth.GetUserRoute(h.api, user)
