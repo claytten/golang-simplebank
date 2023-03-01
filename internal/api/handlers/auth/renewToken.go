@@ -10,7 +10,7 @@ import (
 )
 
 type RenewAccessRequest struct {
-	RefreshToken string `json:"refresh_token" binding:"required"`
+	RefreshToken string `header:"refresh_token" binding:"required"`
 }
 
 type RenewAccessResponse struct {
@@ -26,7 +26,7 @@ func PostRenewTokenUserHandler(s *api.Server) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		var req RenewAccessRequest
 
-		if err := ctx.ShouldBindJSON(&req); err != nil {
+		if err := ctx.ShouldBindHeader(&req); err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}

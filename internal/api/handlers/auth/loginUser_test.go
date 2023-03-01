@@ -26,6 +26,7 @@ const (
 	authorizationPassword    = "password"
 	authorizationOldPassword = "oldPassword"
 	authorizationUsername    = "username"
+	authorizationRefreshKey  = "refresh_token"
 )
 
 func TestMain(m *testing.M) {
@@ -42,7 +43,7 @@ func TestPostLoginUserRoute(t *testing.T) {
 		buildStubs    func(store *mockdb.MockStore)
 		checkResponse func(recorder *httptest.ResponseRecorder)
 	}{
-		// TODO: Login OK
+		// TODO: 200 Login OK
 		{
 			name: "200 OK",
 			body: gin.H{
@@ -54,13 +55,24 @@ func TestPostLoginUserRoute(t *testing.T) {
 					GetUserUsingEmail(gomock.Any(), gomock.Eq(user.Email)).
 					Times(1).
 					Return(user, nil)
+				store.EXPECT().CreateSession(gomock.Any(), gomock.Any()).AnyTimes()
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
 			},
 		},
 
-		// TODO: Login User Not Found
+		// TODO: 400 no body
+		{
+			name:       "400 no body",
+			body:       gin.H{},
+			buildStubs: func(store *mockdb.MockStore) {},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+
+		// TODO: 404 Login User Not Found
 		{
 			name: "404 Not Found",
 			body: gin.H{
@@ -78,7 +90,38 @@ func TestPostLoginUserRoute(t *testing.T) {
 			},
 		},
 
-		// TODO: Incorrect Password
+		// TODO: 500 query get user email
+		{
+			name: "500 query error",
+			body: gin.H{
+				"email":    user.Email,
+				"password": plainPassword,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().GetUserUsingEmail(gomock.Any(), gomock.Any()).Return(db.Users{}, sql.ErrConnDone).Times(1)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+
+		// TODO: 500 query create session
+		{
+			name: "500 query create session",
+			body: gin.H{
+				"email":    user.Email,
+				"password": plainPassword,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().GetUserUsingEmail(gomock.Any(), user.Email).Return(user, nil).Times(1)
+				store.EXPECT().CreateSession(gomock.Any(), gomock.Any()).Return(db.Sessions{}, sql.ErrConnDone).Times(1)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+
+		// TODO: 500 Incorrect Password
 		{
 			name: "500 Incorrect Pass",
 			body: gin.H{
