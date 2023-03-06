@@ -3,6 +3,7 @@ syntax="proto3";
 package pb;
 
 import "rpc_user.proto";
+import "rpc_account.proto";
 
 option go_package = "github.com/claytten/golang-simplebank/pb";
 
@@ -14,4 +15,11 @@ service Simplebank {
   rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse) {}
   rpc UpdatePassword(UpdatePasswordRequest) returns (UpdatePasswordResponse) {}
   rpc RenewToken(RenewTokenRequest) returns (RenewTokenResponse) {}
+
+  //Account
+  rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse) {}
+  rpc GetAccount(GetAccountRequest) returns (GetAccountResponse) {}
+  rpc UpdateAccount(UpdateAccountRequest) returns (UpdateAccountResponse) {}
+  rpc DeleteAccount(DeleteAccountRequest) returns (DeleteAccountResponse) {}
+  rpc TransferTxAccount(TransferTxAccountRequest) returns (TransferTxAccountResponse) {}
 }

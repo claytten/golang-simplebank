@@ -34,6 +34,48 @@ func ConvertToken(token string, maker token.Maker) (*token.Payload, error) {
 	return authPayload, nil
 }
 
+func ConvertAccount(account db.Accounts) *pb.Account {
+	return &pb.Account{
+		Id:        account.ID,
+		Owner:     account.Owner,
+		Balance:   account.Balance,
+		Currency:  account.Currency,
+		CreatedAt: timestamppb.New(account.CreatedAt),
+		UpdatedAt: timestamppb.New(account.UpdatedAt),
+	}
+}
+
+func ConvertTransfer(transfer db.Transfers) *pb.Transfer {
+	return &pb.Transfer{
+		Id:            transfer.ID,
+		FromAccountId: transfer.FromAccountID,
+		ToAccountId:   transfer.ToAccountID,
+		Amount:        transfer.Amount,
+		CreatedAt:     timestamppb.New(transfer.CreatedAt),
+		UpdatedAt:     timestamppb.New(transfer.UpdatedAt),
+	}
+}
+
+func ConvertEntry(entry db.Entries) *pb.Entries {
+	return &pb.Entries{
+		Id:        entry.ID,
+		AccountId: entry.AccountID,
+		Amount:    entry.Amount,
+		CreatedAt: timestamppb.New(entry.CreatedAt),
+		UpdatedAt: timestamppb.New(entry.UpdatedAt),
+	}
+}
+
+func ConvertTransferTx(transfer db.TransferTxResult) *pb.TransferTxAccountResponse {
+	return &pb.TransferTxAccountResponse{
+		Transfer:    ConvertTransfer(transfer.Transfer),
+		FromAccount: ConvertAccount(transfer.FromAccount),
+		ToAccount:   ConvertAccount(transfer.ToAccount),
+		FromEntry:   ConvertEntry(transfer.FromEntry),
+		ToEntry:     ConvertEntry(transfer.ToEntry),
+	}
+}
+
 func CheckOwnUser(username, oldPassword, token string, server *gapi.Server, ctx context.Context) (string, error) {
 	authPayload, err := ConvertToken(token, server.Token)
 	if err != nil {
@@ -62,4 +104,25 @@ func CheckOwnUser(username, oldPassword, token string, server *gapi.Server, ctx 
 	}
 
 	return userHeader.Username, nil
+}
+
+func ValidateAccount(ctx context.Context, db db.Store, from_account_id, to_account_id int64, currency string) error {
+	fromAccount, err := db.GetAccount(ctx, from_account_id)
+	if err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+
+	toAccount, err := db.GetAccount(ctx, from_account_id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return status.Error(codes.NotFound, err.Error())
+		}
+
+		return status.Error(codes.Internal, err.Error())
+	}
+
+	if fromAccount.Currency != currency || toAccount.Currency != currency {
+		return status.Error(codes.Internal, "From/To Account Mismatch Currency")
+	}
+	return nil
 }
