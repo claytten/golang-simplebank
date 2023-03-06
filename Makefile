@@ -37,4 +37,7 @@ proto:
 	--go-grpc_out=pb --go-grpc_opt=paths=source_relative \
 	proto/*.proto
 
-.PHONY: createdb dropdb freshdb dropalldb sqlc server test mock proto
+evans:
+	evans --host localhost --port 8081 -r repl
+
+.PHONY: createdb dropdb freshdb dropalldb sqlc server test mock proto evans
