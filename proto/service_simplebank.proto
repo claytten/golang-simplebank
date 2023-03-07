@@ -2,6 +2,7 @@ syntax="proto3";
 
 package pb;
 
+import "google/api/annotations.proto";
 import "rpc_user.proto";
 import "rpc_account.proto";
 
@@ -9,8 +10,18 @@ option go_package = "github.com/claytten/golang-simplebank/pb";
 
 service Simplebank {
   // users
-  rpc LoginUser(LoginUserRequest) returns (LoginUserResponse) {}
-  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {}
+  rpc LoginUser(LoginUserRequest) returns (LoginUserResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/login"
+      body: "*"
+    };
+  }
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/create"
+      body: "*"
+    };
+  }
   rpc GetUser(GetUserRequest) returns (GetUserResponse) {}
   rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse) {}
   rpc UpdatePassword(UpdatePasswordRequest) returns (UpdatePasswordResponse) {}

@@ -204,3 +204,56 @@ func (s *gapiHandlerSetup) UpdatePassword(ctx context.Context, req *pb.UpdatePas
 
 	return res, nil
 }
+
+func (s *gapiHandlerSetup) RenewToken(ctx context.Context, req *pb.RenewTokenRequest) (*pb.RenewTokenResponse, error) {
+	refreshPayload, err := s.server.Token.VerifyToken(req.RefreshToken)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+
+	session, err := s.server.DB.GetSession(ctx, refreshPayload.ID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// session checking
+	// check block sessin
+	if session.IsBlocked {
+		return nil, status.Error(codes.Unauthenticated, "blocked session")
+	}
+
+	// check email is matching
+	if session.Email != refreshPayload.Email {
+		return nil, status.Error(codes.Unauthenticated, "incorrect session user")
+	}
+
+	// check refreshToken is matching
+	if session.RefreshToken != req.RefreshToken {
+		return nil, status.Error(codes.Unauthenticated, "mismatched session token")
+	}
+
+	// check expired token
+	if time.Now().After(session.ExpiresAt) {
+		return nil, status.Error(codes.Unauthenticated, "expired session")
+	}
+
+	// create new token
+	accessToken, accessTokenPayload, err := s.server.Token.CreateToken(
+		refreshPayload.Email,
+		s.server.Config.AccessTokenDuration,
+	)
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	response := &pb.RenewTokenResponse{
+		AccessToken:          accessToken,
+		AccessTokenExpiresAt: timestamppb.New(accessTokenPayload.ExpiredAt),
+	}
+
+	return response, nil
+}
