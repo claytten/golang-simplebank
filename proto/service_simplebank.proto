@@ -16,13 +16,20 @@ service Simplebank {
       body: "*"
     };
   }
+
   rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
     option (google.api.http) = {
       post: "/api/v1/auth/create"
       body: "*"
     };
   }
-  rpc GetUser(GetUserRequest) returns (GetUserResponse) {}
+
+  rpc GetUser(GetUserRequest) returns (GetUserResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/getUser"
+    };
+  }
+
   rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse) {}
   rpc UpdatePassword(UpdatePasswordRequest) returns (UpdatePasswordResponse) {}
   rpc RenewToken(RenewTokenRequest) returns (RenewTokenResponse) {}

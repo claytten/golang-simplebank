@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/claytten/golang-simplebank/internal/api/token"
 	db "github.com/claytten/golang-simplebank/internal/db/sqlc"
 	"github.com/claytten/golang-simplebank/internal/gapi"
 	"github.com/claytten/golang-simplebank/internal/util"
@@ -23,15 +22,6 @@ func ConvertUser(user db.Users) *pb.User {
 		CreatedAt:         timestamppb.New(user.CreatedAt),
 		UpdatedAt:         timestamppb.New(user.UpdatedAt),
 	}
-}
-
-func ConvertToken(token string, maker token.Maker) (*token.Payload, error) {
-	authPayload, err := maker.VerifyToken(token)
-	if err != nil {
-		return nil, err
-	}
-
-	return authPayload, nil
 }
 
 func ConvertAccount(account db.Accounts) *pb.Account {
@@ -76,14 +66,9 @@ func ConvertTransferTx(transfer db.TransferTxResult) *pb.TransferTxAccountRespon
 	}
 }
 
-func CheckOwnUser(username, oldPassword, token string, server *gapi.Server, ctx context.Context) (string, error) {
-	authPayload, err := ConvertToken(token, server.Token)
-	if err != nil {
-		return "", status.Error(codes.Unauthenticated, "access denied")
-	}
-
+func CheckOwnUser(username, oldPassword, email string, server *gapi.Server, ctx context.Context) (string, error) {
 	//finding user by email
-	userHeader, err := server.DB.GetUserUsingEmail(ctx, authPayload.Email)
+	userHeader, err := server.DB.GetUserUsingEmail(ctx, email)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return "", status.Error(codes.NotFound, "User Not Found and Not Authorized")

@@ -98,9 +98,9 @@ func (s *gapiHandlerSetup) LoginUser(ctx context.Context, req *pb.LoginUserReque
 }
 
 func (s *gapiHandlerSetup) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
-	authPayload, err := gapiConverter.ConvertToken(req.GetAccessToken(), s.server.Token)
+	authPayload, err := gapiConverter.AuthorizeUser(ctx, s.server)
 	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, "access denied")
+		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 
 	userHeader, err := s.server.DB.GetUserUsingEmail(ctx, authPayload.Email)
@@ -124,7 +124,12 @@ func (s *gapiHandlerSetup) GetUser(ctx context.Context, req *pb.GetUserRequest) 
 }
 
 func (s *gapiHandlerSetup) UpdateProfile(ctx context.Context, req *pb.UpdateProfileRequest) (*pb.UpdateProfileResponse, error) {
-	username, err := gapiConverter.CheckOwnUser(req.GetUsername(), req.GetOldPassword(), req.GetAccessToken(), s.server, ctx)
+	authPayload, err := gapiConverter.AuthorizeUser(ctx, s.server)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+
+	username, err := gapiConverter.CheckOwnUser(req.GetUsername(), req.GetOldPassword(), authPayload.Email, s.server, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +171,12 @@ func (s *gapiHandlerSetup) UpdateProfile(ctx context.Context, req *pb.UpdateProf
 }
 
 func (s *gapiHandlerSetup) UpdatePassword(ctx context.Context, req *pb.UpdatePasswordRequest) (*pb.UpdatePasswordResponse, error) {
-	username, err := gapiConverter.CheckOwnUser(req.GetUsername(), req.GetOldPassword(), req.GetAccessToken(), s.server, ctx)
+	authPayload, err := gapiConverter.AuthorizeUser(ctx, s.server)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+
+	username, err := gapiConverter.CheckOwnUser(req.GetUsername(), req.GetOldPassword(), authPayload.Email, s.server, ctx)
 	if err != nil {
 		return nil, err
 	}

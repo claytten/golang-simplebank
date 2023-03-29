@@ -11,7 +11,6 @@ message CreateAccountRequest {
   string currency = 1;
   string username = 2;
   string oldPassword = 3;
-  string accessToken = 4;
 }
 
 message CreateAccountResponse {
@@ -21,7 +20,6 @@ message CreateAccountResponse {
 // get account
 message GetAccountRequest {
   int64 id = 1;
-  string accessToken = 2;
 }
 
 message GetAccountResponse {
@@ -34,7 +32,6 @@ message UpdateAccountRequest {
   string username = 2;
   string oldPassword = 3;
   int64 balance = 4;
-  string accessToken = 5;
 }
 message UpdateAccountResponse{
   Account Account = 1;
@@ -45,7 +42,6 @@ message DeleteAccountRequest{
   int64 id = 1;
   string username = 2;
   string oldPassword = 3;
-  string accessToken = 4;
 }
 
 message DeleteAccountResponse {
@@ -54,13 +50,12 @@ message DeleteAccountResponse {
 
 // transfer cash from two account
 message TransferTxAccountRequest{
-  string username = 2;
-  string oldPassword = 3;
-  int64 FromAccountID = 4;
-  int64 ToAccountID = 5;
-  int64 amount = 6;
-  string currency = 7;
-  string accessToken = 8;
+  string username = 1;
+  string oldPassword = 2;
+  int64 FromAccountID = 3;
+  int64 ToAccountID = 4;
+  int64 amount = 5;
+  string currency = 6;
 }
 
 message TransferTxAccountResponse{

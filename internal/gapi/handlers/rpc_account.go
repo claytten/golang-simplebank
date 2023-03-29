@@ -14,7 +14,12 @@ import (
 )
 
 func (s *gapiHandlerSetup) CreateAccount(ctx context.Context, req *pb.CreateAccountRequest) (*pb.CreateAccountResponse, error) {
-	username, err := gapiConverter.CheckOwnUser(req.GetUsername(), req.GetOldPassword(), req.GetAccessToken(), s.server, ctx)
+	authPayload, err := gapiConverter.AuthorizeUser(ctx, s.server)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+
+	username, err := gapiConverter.CheckOwnUser(req.GetUsername(), req.GetOldPassword(), authPayload.Email, s.server, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -41,9 +46,9 @@ func (s *gapiHandlerSetup) CreateAccount(ctx context.Context, req *pb.CreateAcco
 	}, nil
 }
 func (s *gapiHandlerSetup) GetAccount(ctx context.Context, req *pb.GetAccountRequest) (*pb.GetAccountResponse, error) {
-	_, err := gapiConverter.ConvertToken(req.GetAccessToken(), s.server.Token)
+	_, err := gapiConverter.AuthorizeUser(ctx, s.server)
 	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, "access denied")
+		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 
 	account, err := s.server.DB.GetAccount(ctx, req.GetId())
@@ -61,7 +66,12 @@ func (s *gapiHandlerSetup) GetAccount(ctx context.Context, req *pb.GetAccountReq
 	return res, nil
 }
 func (s *gapiHandlerSetup) UpdateAccount(ctx context.Context, req *pb.UpdateAccountRequest) (*pb.UpdateAccountResponse, error) {
-	_, err := gapiConverter.CheckOwnUser(req.GetUsername(), req.GetOldPassword(), req.GetAccessToken(), s.server, ctx)
+	authPayload, err := gapiConverter.AuthorizeUser(ctx, s.server)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+
+	_, err = gapiConverter.CheckOwnUser(req.GetUsername(), req.GetOldPassword(), authPayload.Email, s.server, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +94,12 @@ func (s *gapiHandlerSetup) UpdateAccount(ctx context.Context, req *pb.UpdateAcco
 	return res, nil
 }
 func (s *gapiHandlerSetup) DeleteAccount(ctx context.Context, req *pb.DeleteAccountRequest) (*pb.DeleteAccountResponse, error) {
-	_, err := gapiConverter.CheckOwnUser(req.GetUsername(), req.GetOldPassword(), req.GetAccessToken(), s.server, ctx)
+	authPayload, err := gapiConverter.AuthorizeUser(ctx, s.server)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+
+	_, err = gapiConverter.CheckOwnUser(req.GetUsername(), req.GetOldPassword(), authPayload.Email, s.server, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +114,12 @@ func (s *gapiHandlerSetup) DeleteAccount(ctx context.Context, req *pb.DeleteAcco
 	return res, nil
 }
 func (s *gapiHandlerSetup) TransferTxAccount(ctx context.Context, req *pb.TransferTxAccountRequest) (*pb.TransferTxAccountResponse, error) {
-	_, err := gapiConverter.CheckOwnUser(req.GetUsername(), req.GetOldPassword(), req.GetAccessToken(), s.server, ctx)
+	authPayload, err := gapiConverter.AuthorizeUser(ctx, s.server)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+
+	_, err = gapiConverter.CheckOwnUser(req.GetUsername(), req.GetOldPassword(), authPayload.Email, s.server, ctx)
 	if err != nil {
 		return nil, err
 	}
