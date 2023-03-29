@@ -1,0 +1,67 @@
+syntax="proto3";
+
+package pb;
+
+import "model.proto";
+
+option go_package = "github.com/claytten/golang-simplebank/pb";
+
+// create account
+message CreateAccountRequest {
+  string currency = 1;
+  string username = 2;
+  string oldPassword = 3;
+}
+
+message CreateAccountResponse {
+  Account Account = 1;
+}
+
+// get account
+message GetAccountRequest {
+  int64 id = 1;
+}
+
+message GetAccountResponse {
+  Account Account = 1;
+}
+
+// update account
+message UpdateAccountRequest {
+  int64 id = 1;
+  string username = 2;
+  string oldPassword = 3;
+  int64 balance = 4;
+}
+message UpdateAccountResponse{
+  Account Account = 1;
+}
+
+// delete account
+message DeleteAccountRequest{
+  int64 id = 1;
+  string username = 2;
+  string oldPassword = 3;
+}
+
+message DeleteAccountResponse {
+  string message = 1;
+}
+
+// transfer cash from two account
+message TransferTxAccountRequest{
+  string username = 1;
+  string oldPassword = 2;
+  int64 FromAccountID = 3;
+  int64 ToAccountID = 4;
+  int64 amount = 5;
+  string currency = 6;
+}
+
+message TransferTxAccountResponse{
+  Transfer Transfer = 1;
+  Account FromAccount = 2;
+  Account ToAccount = 3;
+  Entries FromEntry = 4;
+  Entries ToEntry = 5;
+}

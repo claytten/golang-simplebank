@@ -1,0 +1,78 @@
+syntax="proto3";
+
+package pb;
+
+import "model.proto";
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/claytten/golang-simplebank/pb";
+
+// Create User
+message CreateUserRequest {
+  string username = 1;
+  string full_name = 2;
+  string email = 3;
+  string password = 4;
+}
+
+message CreateUserResponse {
+  User user = 1;
+}
+
+// Login User
+message LoginUserRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message LoginUserResponse {
+  User user = 1;
+  string session_id = 2;
+  string access_token = 3;
+  string refresh_token = 4;
+  google.protobuf.Timestamp access_token_expires_at = 5;
+  google.protobuf.Timestamp refresh_token_expires_at = 6;
+}
+
+// Get User
+message GetUserRequest {
+  string username = 1;
+}
+
+message GetUserResponse {
+  User user = 1;
+}
+
+// Update Profile
+message UpdateProfileRequest {
+  string username = 1;
+  string full_name = 2;
+  string email = 3;
+  string oldPassword = 4;
+}
+
+message UpdateProfileResponse {
+  User user = 1;
+}
+
+// Update Password
+message UpdatePasswordRequest {
+  string username = 1;
+  string oldPassword = 2;
+  string password = 3;
+}
+
+message UpdatePasswordResponse {
+  User user = 1;
+}
+
+// Renew Token
+message RenewTokenRequest {
+  string refresh_token = 1;
+}
+
+message RenewTokenResponse {
+  string access_token = 1;
+  google.protobuf.Timestamp access_token_expires_at = 2;
+}

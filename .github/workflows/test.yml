@@ -18,7 +18,8 @@ jobs:
       ENVIRONMENT: ${{ vars.ENVIRONMENT }}
       DB_SOURCE: ${{ vars.DB_SOURCE }}
       DB_DRIVER: ${{ vars.DB_DRIVER }}
-      SERVER_ADDRESS: ${{ vars.SERVER_ADDRESS }}
+      HTTP_SERVER_ADDRESS: ${{ vars.HTTP_SERVER_ADDRESS }}
+      GRPC_SERVER_ADDRESS: ${{ vars.GRPC_SERVER_ADDRESS }}
       TOKEN_SYMMETRIC_KEY: ${{ secrets.TOKEN_SYMMETRIC_KEY }}
       ACCESS_TOKEN_DURATION: ${{ vars.ACCESS_TOKEN_DURATION }}
       REFRESH_TOKEN_DURATION: ${{ vars.REFRESH_TOKEN_DURATION }}
@@ -43,7 +44,8 @@ jobs:
         echo "ENVIRONMENT=$ENVIRONMENT" >> app.env
         echo "DB_SOURCE=$DB_SOURCE" >> app.env
         echo "DB_DRIVER=$DB_DRIVER" >> app.env
-        echo "SERVER_ADDRESS=$SERVER_ADDRESS" >> app.env
+        echo "HTTP_SERVER_ADDRESS=$HTTP_SERVER_ADDRESS" >> app.env
+        echo "GRPC_SERVER_ADDRESS=$GRPC_SERVER_ADDRESS" >> app.env
         echo "TOKEN_SYMMETRIC_KEY=$TOKEN_SYMMETRIC_KEY" >> app.env
         echo "ACCESS_TOKEN_DURATION=$ACCESS_TOKEN_DURATION" >> app.env
         echo "REFRESH_TOKEN_DURATION=$REFRESH_TOKEN_DURATION" >> app.env
