@@ -30,14 +30,58 @@ service Simplebank {
     };
   }
 
-  rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse) {}
-  rpc UpdatePassword(UpdatePasswordRequest) returns (UpdatePasswordResponse) {}
-  rpc RenewToken(RenewTokenRequest) returns (RenewTokenResponse) {}
+  rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/auth/profile"
+      body: "*"
+    };
+  }
+
+  rpc UpdatePassword(UpdatePasswordRequest) returns (UpdatePasswordResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/auth/profile/password"
+      body: "*"
+    };
+  }
+
+  rpc RenewToken(RenewTokenRequest) returns (RenewTokenResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/renew-token"
+      body: "*"
+    };
+  }
 
   //Account
-  rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse) {}
-  rpc GetAccount(GetAccountRequest) returns (GetAccountResponse) {}
-  rpc UpdateAccount(UpdateAccountRequest) returns (UpdateAccountResponse) {}
-  rpc DeleteAccount(DeleteAccountRequest) returns (DeleteAccountResponse) {}
-  rpc TransferTxAccount(TransferTxAccountRequest) returns (TransferTxAccountResponse) {}
+  rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/account/create"
+      body: "*"
+    };
+  }
+
+  rpc GetAccount(GetAccountRequest) returns (GetAccountResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/account/getAccount"
+    };
+  }
+
+  rpc UpdateAccount(UpdateAccountRequest) returns (UpdateAccountResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/account/update"
+      body: "*"
+    };
+  }
+
+  rpc DeleteAccount(DeleteAccountRequest) returns (DeleteAccountResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/account/delete"
+    };
+  }
+
+  rpc TransferTxAccount(TransferTxAccountRequest) returns (TransferTxAccountResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/account/transfer"
+      body: "*"
+    };
+  }
 }
