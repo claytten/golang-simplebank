@@ -14,6 +14,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NotEmpty(t, config)
 	require.NotEmpty(t, config.Environment)
 	require.NotEmpty(t, config.HTTPServerAddress)
+	require.NotEmpty(t, config.GrpcServerAddress)
 	require.NotEmpty(t, config.DBDriver)
 	require.NotEmpty(t, config.DBSource)
 	require.NotEmpty(t, config.AccessTokenDuration)
