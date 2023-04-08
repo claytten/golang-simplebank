@@ -5,8 +5,37 @@ package pb;
 import "google/api/annotations.proto";
 import "rpc_user.proto";
 import "rpc_account.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 option go_package = "github.com/claytten/golang-simplebank/pb";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Golang SimpleBank API";
+    version: "1.0.2";
+    contact: {
+      name: "Claytten";
+      url: "https://github.com/claytten";
+      email: "wahyuajisulaiman@gmail.com";
+    };
+  };
+  security_definitions: {
+    security: {
+      key: "Bearer"
+      value: {
+        type: TYPE_API_KEY
+        in: IN_HEADER
+        name: "Authorization"
+        description: "Authentication token, prefixed by Bearer: Bearer <token>"
+      }
+    }
+  }
+  security: {
+    security_requirement: {
+      key: "Bearer"
+    }
+  }
+};
 
 service Simplebank {
   // users
@@ -15,6 +44,11 @@ service Simplebank {
       post: "/api/v1/auth/login"
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to login new session";
+      summary: "Login user";
+      security: { } // Disable security key
+    };
   }
 
   rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
@@ -22,11 +56,21 @@ service Simplebank {
       post: "/api/v1/auth/create"
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to create a new user";
+      summary: "Create new user";
+      security: { } // Disable security key
+    };
   }
 
   rpc GetUser(GetUserRequest) returns (GetUserResponse) {
     option (google.api.http) = {
       get: "/api/v1/auth/getUser"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to get a user";
+      summary: "Get User";
     };
   }
 
@@ -35,6 +79,11 @@ service Simplebank {
       put: "/api/v1/auth/profile"
       body: "*"
     };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to update a user profile";
+      summary: "Update user profile";
+    };
   }
 
   rpc UpdatePassword(UpdatePasswordRequest) returns (UpdatePasswordResponse) {
@@ -42,12 +91,22 @@ service Simplebank {
       put: "/api/v1/auth/profile/password"
       body: "*"
     };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to update a user password";
+      summary: "Update user password";
+    };
   }
 
   rpc RenewToken(RenewTokenRequest) returns (RenewTokenResponse) {
     option (google.api.http) = {
       post: "/api/v1/auth/renew-token"
       body: "*"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to renew token user";
+      summary: "Renew token user";
     };
   }
 
@@ -57,11 +116,21 @@ service Simplebank {
       post: "/api/v1/account/create"
       body: "*"
     };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to create a new account";
+      summary: "Create new account";
+    };
   }
 
   rpc GetAccount(GetAccountRequest) returns (GetAccountResponse) {
     option (google.api.http) = {
       get: "/api/v1/account/getAccount"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to get an account";
+      summary: "Get Account";
     };
   }
 
@@ -70,11 +139,21 @@ service Simplebank {
       put: "/api/v1/account/update"
       body: "*"
     };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to update an account balance";
+      summary: "Update account balance";
+    };
   }
 
   rpc DeleteAccount(DeleteAccountRequest) returns (DeleteAccountResponse) {
     option (google.api.http) = {
       delete: "/api/v1/account/delete"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to delete an account";
+      summary: "Delete account";
     };
   }
 
@@ -82,6 +161,11 @@ service Simplebank {
     option (google.api.http) = {
       post: "/api/v1/account/transfer"
       body: "*"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to create new transaction between two accounts";
+      summary: "Transfer between two accounts";
     };
   }
 }

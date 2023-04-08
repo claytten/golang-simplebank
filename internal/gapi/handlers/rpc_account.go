@@ -7,6 +7,8 @@ import (
 
 	db "github.com/claytten/golang-simplebank/internal/db/sqlc"
 	gapiConverter "github.com/claytten/golang-simplebank/internal/gapi/converter"
+	gapiError "github.com/claytten/golang-simplebank/internal/gapi/error"
+	gapiValidate "github.com/claytten/golang-simplebank/internal/gapi/validate"
 	"github.com/claytten/golang-simplebank/pb"
 	"github.com/lib/pq"
 	"google.golang.org/grpc/codes"
@@ -14,6 +16,11 @@ import (
 )
 
 func (s *gapiHandlerSetup) CreateAccount(ctx context.Context, req *pb.CreateAccountRequest) (*pb.CreateAccountResponse, error) {
+	//validating request
+	if err := gapiValidate.ValidateCreateAccountRequest(req); err != nil {
+		return nil, gapiError.InvalidArgumentError(err)
+	}
+
 	authPayload, err := gapiConverter.AuthorizeUser(ctx, s.server)
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, err.Error())
@@ -26,7 +33,7 @@ func (s *gapiHandlerSetup) CreateAccount(ctx context.Context, req *pb.CreateAcco
 
 	arg := db.CreateAccountParams{
 		Owner:    username,
-		Currency: req.Currency,
+		Currency: req.GetCurrency(),
 		Balance:  0,
 	}
 
@@ -66,6 +73,11 @@ func (s *gapiHandlerSetup) GetAccount(ctx context.Context, req *pb.GetAccountReq
 	return res, nil
 }
 func (s *gapiHandlerSetup) UpdateAccount(ctx context.Context, req *pb.UpdateAccountRequest) (*pb.UpdateAccountResponse, error) {
+	//validating request
+	if err := gapiValidate.ValidateUpdateAccountRequest(req); err != nil {
+		return nil, gapiError.InvalidArgumentError(err)
+	}
+
 	authPayload, err := gapiConverter.AuthorizeUser(ctx, s.server)
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, err.Error())
@@ -114,6 +126,11 @@ func (s *gapiHandlerSetup) DeleteAccount(ctx context.Context, req *pb.DeleteAcco
 	return res, nil
 }
 func (s *gapiHandlerSetup) TransferTxAccount(ctx context.Context, req *pb.TransferTxAccountRequest) (*pb.TransferTxAccountResponse, error) {
+	//validating request
+	if err := gapiValidate.ValidateTransactionAccountRequest(req); err != nil {
+		return nil, gapiError.InvalidArgumentError(err)
+	}
+
 	authPayload, err := gapiConverter.AuthorizeUser(ctx, s.server)
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, err.Error())

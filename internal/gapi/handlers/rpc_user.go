@@ -8,6 +8,8 @@ import (
 
 	db "github.com/claytten/golang-simplebank/internal/db/sqlc"
 	gapiConverter "github.com/claytten/golang-simplebank/internal/gapi/converter"
+	gapiError "github.com/claytten/golang-simplebank/internal/gapi/error"
+	gapiValidate "github.com/claytten/golang-simplebank/internal/gapi/validate"
 	"github.com/claytten/golang-simplebank/internal/util"
 	"github.com/claytten/golang-simplebank/pb"
 	"github.com/lib/pq"
@@ -17,6 +19,11 @@ import (
 )
 
 func (s *gapiHandlerSetup) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.CreateUserResponse, error) {
+	//validating request
+	if err := gapiValidate.ValidateCreateUserRequest(req); err != nil {
+		return nil, gapiError.InvalidArgumentError(err)
+	}
+
 	hashedPassword, err := util.HashingPassword(req.GetPassword())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to hashed password %s", err.Error())
@@ -47,6 +54,10 @@ func (s *gapiHandlerSetup) CreateUser(ctx context.Context, req *pb.CreateUserReq
 }
 
 func (s *gapiHandlerSetup) LoginUser(ctx context.Context, req *pb.LoginUserRequest) (*pb.LoginUserResponse, error) {
+	violations := gapiValidate.ValidateLoginUserRequest(req)
+	if violations != nil {
+		return nil, gapiError.InvalidArgumentError(violations)
+	}
 	user, err := s.server.DB.GetUserUsingEmail(ctx, req.GetEmail())
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -124,6 +135,11 @@ func (s *gapiHandlerSetup) GetUser(ctx context.Context, req *pb.GetUserRequest) 
 }
 
 func (s *gapiHandlerSetup) UpdateProfile(ctx context.Context, req *pb.UpdateProfileRequest) (*pb.UpdateProfileResponse, error) {
+	violations := gapiValidate.ValidateUpdateProfileRequest(req)
+	if violations != nil {
+		return nil, gapiError.InvalidArgumentError(violations)
+	}
+
 	authPayload, err := gapiConverter.AuthorizeUser(ctx, s.server)
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, err.Error())
@@ -171,6 +187,11 @@ func (s *gapiHandlerSetup) UpdateProfile(ctx context.Context, req *pb.UpdateProf
 }
 
 func (s *gapiHandlerSetup) UpdatePassword(ctx context.Context, req *pb.UpdatePasswordRequest) (*pb.UpdatePasswordResponse, error) {
+	violations := gapiValidate.ValidateUpdatePasswordRequest(req)
+	if violations != nil {
+		return nil, gapiError.InvalidArgumentError(violations)
+	}
+
 	authPayload, err := gapiConverter.AuthorizeUser(ctx, s.server)
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, err.Error())

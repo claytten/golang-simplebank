@@ -40,7 +40,7 @@ func ValidateFullName(value string) error {
 }
 
 func ValidatePassword(value string) error {
-	return ValidateString(value, 6, 100)
+	return ValidateString(value, 5, 100)
 }
 
 func ValidateEmail(value string) error {
@@ -49,6 +49,13 @@ func ValidateEmail(value string) error {
 	}
 	if _, err := mail.ParseAddress(value); err != nil {
 		return fmt.Errorf("is not a valid email address")
+	}
+	return nil
+}
+
+func ValidateBalance(value int64) error {
+	if value <= 0 {
+		return fmt.Errorf("must be greater than 0")
 	}
 	return nil
 }
