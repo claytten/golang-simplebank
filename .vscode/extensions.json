@@ -1,5 +1,7 @@
 {
-  "recommendations": [
-    "howardzuo.vscode-favorites"
-  ]
+  "protoc": {
+      "options": [
+        "--proto_path=proto",
+      ]
+  }
 }
