@@ -47,8 +47,8 @@ message GetUserResponse {
 // Update Profile
 message UpdateProfileRequest {
   string username = 1;
-  string full_name = 2;
-  string email = 3;
+  optional string full_name = 2;
+  optional string email = 3;
   string oldPassword = 4;
 }
 

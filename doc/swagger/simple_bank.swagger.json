@@ -168,7 +168,7 @@
       }
     },
     "/api/v1/account/update": {
-      "put": {
+      "patch": {
         "summary": "Update account balance",
         "description": "Use this API to update an account balance",
         "operationId": "Simplebank_UpdateAccount",
@@ -304,7 +304,7 @@
       }
     },
     "/api/v1/auth/profile": {
-      "put": {
+      "patch": {
         "summary": "Update user profile",
         "description": "Use this API to update a user profile",
         "operationId": "Simplebank_UpdateProfile",
@@ -338,7 +338,7 @@
       }
     },
     "/api/v1/auth/profile/password": {
-      "put": {
+      "patch": {
         "summary": "Update user password",
         "description": "Use this API to update a user password",
         "operationId": "Simplebank_UpdatePassword",
