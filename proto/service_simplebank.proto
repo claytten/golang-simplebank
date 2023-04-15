@@ -76,7 +76,7 @@ service Simplebank {
 
   rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse) {
     option (google.api.http) = {
-      put: "/api/v1/auth/profile"
+      patch: "/api/v1/auth/profile"
       body: "*"
     };
 
@@ -88,7 +88,7 @@ service Simplebank {
 
   rpc UpdatePassword(UpdatePasswordRequest) returns (UpdatePasswordResponse) {
     option (google.api.http) = {
-      put: "/api/v1/auth/profile/password"
+      patch: "/api/v1/auth/profile/password"
       body: "*"
     };
 
@@ -136,7 +136,7 @@ service Simplebank {
 
   rpc UpdateAccount(UpdateAccountRequest) returns (UpdateAccountResponse) {
     option (google.api.http) = {
-      put: "/api/v1/account/update"
+      patch: "/api/v1/account/update"
       body: "*"
     };
 

@@ -79,7 +79,7 @@ func CheckOwnUser(username, oldPassword, email string, server *gapi.Server, ctx 
 
 	// checking if username is provided at header
 	if username != userHeader.Username {
-		return "", status.Error(codes.Internal, "User Status Unauthorized")
+		return "", status.Error(codes.PermissionDenied, "User Status Permission Denied")
 	}
 
 	// checking if user typing old password and new password is same

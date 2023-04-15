@@ -154,13 +154,6 @@ func (s *gapiHandlerSetup) UpdateProfile(ctx context.Context, req *pb.UpdateProf
 	if err != nil {
 		return nil, status.Error(codes.Internal, "User Not Found")
 	}
-	if req.GetFullName() == "" {
-		req.FullName = user.FullName
-	}
-
-	if req.GetEmail() == "" {
-		req.Email = user.Email
-	}
 
 	updatedUser, err := s.server.DB.UpdateUser(ctx, db.UpdateUserParams{
 		Username: user.Username,
@@ -176,6 +169,9 @@ func (s *gapiHandlerSetup) UpdateProfile(ctx context.Context, req *pb.UpdateProf
 	})
 
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, status.Error(codes.NotFound, "User Not Found")
+		}
 		return nil, status.Error(codes.Internal, "User Cannot Updated")
 	}
 
