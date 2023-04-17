@@ -1,8 +1,11 @@
 package util
 
 import (
+	"errors"
 	"fmt"
 	"net/mail"
+	"os"
+	"path/filepath"
 	"regexp"
 )
 
@@ -57,5 +60,36 @@ func ValidateBalance(value int64) error {
 	if value <= 0 {
 		return fmt.Errorf("must be greater than 0")
 	}
+	return nil
+}
+
+func ValidateFolderAndFile(folder, file string) error {
+	// Get the absolute path of the folder/file from root project directory
+	folderPath := filepath.Join(".", folder) // Use "." for the current directory
+	filePath := filepath.Join(".", folder, file)
+	// Check if a folder exists
+	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
+		err := os.Mkdir(folderPath, 0755)
+		if err != nil {
+			return errors.New(err.Error())
+		}
+	}
+
+	// Check if a file exists
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		// Create the file with permission 0664
+		file, err := os.Create(filePath)
+		if err != nil {
+			return errors.New(err.Error())
+		}
+		defer file.Close()
+
+		// Set the file permission to 0664
+		err = file.Chmod(0664)
+		if err != nil {
+			return errors.New(err.Error())
+		}
+	}
+
 	return nil
 }
