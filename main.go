@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	_ "github.com/claytten/golang-simplebank/doc/statik"
 	"github.com/claytten/golang-simplebank/internal/api"
@@ -30,6 +31,7 @@ import (
 )
 
 func main() {
+	// checking file app.env is exists
 	config, err := util.LoadConfig("app", ".")
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot load config")
@@ -37,6 +39,14 @@ func main() {
 
 	if config.Environment == "development" {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	} else {
+		runLogFile, err := RunLogProduction("myapp", "log")
+		if err != nil {
+			log.Fatal().Err(err).Msg("cannot create log file")
+		}
+		multi := zerolog.MultiLevelWriter(os.Stdout, runLogFile)
+
+		log.Logger = zerolog.New(multi)
 	}
 
 	conn, err := sql.Open(config.DBDriver, config.DBSource)
@@ -148,4 +158,22 @@ func RunDBMigration(migrationURL, dbSource string) {
 	}
 
 	log.Info().Msg("migration successful")
+}
+
+func RunLogProduction(logName, folder string) (*os.File, error) {
+	// checking file log/myapp.log is exists
+	dayString := time.Now().Format("20060102")
+	fileName := logName + dayString + ".log"
+
+	if err := util.ValidateFolderAndFile(folder, fileName); err != nil {
+		return nil, err
+	}
+
+	runLogFile, err := os.OpenFile(
+		folder+"/"+fileName,
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY,
+		0664,
+	)
+
+	return runLogFile, err
 }
