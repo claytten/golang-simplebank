@@ -11,7 +11,9 @@ import (
 	gapiError "github.com/claytten/golang-simplebank/internal/gapi/error"
 	gapiValidate "github.com/claytten/golang-simplebank/internal/gapi/validate"
 	"github.com/claytten/golang-simplebank/internal/util"
+	"github.com/claytten/golang-simplebank/internal/worker"
 	"github.com/claytten/golang-simplebank/pb"
+	"github.com/hibiken/asynq"
 	"github.com/lib/pq"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -45,6 +47,21 @@ func (s *gapiHandlerSetup) CreateUser(ctx context.Context, req *pb.CreateUserReq
 			}
 		}
 		return nil, status.Errorf(codes.Internal, "Failed to create user : %s", err.Error())
+	}
+
+	// send verification email
+	// TODO: db transaction while creating user for blocking process
+	taskPayload := &worker.PayloadSendVerifyEmail{
+		Email: user.Email,
+	}
+	opts := []asynq.Option{
+		asynq.MaxRetry(10),
+		asynq.ProcessIn(10 * time.Second),
+		asynq.Queue(worker.QueueCritical),
+	}
+	err = s.server.TaskDistrbutor.DistributeTaskVerifyEmail(ctx, taskPayload, opts...)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to send verification email : %s", err.Error())
 	}
 
 	res := &pb.CreateUserResponse{
