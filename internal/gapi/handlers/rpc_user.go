@@ -11,7 +11,9 @@ import (
 	gapiError "github.com/claytten/golang-simplebank/internal/gapi/error"
 	gapiValidate "github.com/claytten/golang-simplebank/internal/gapi/validate"
 	"github.com/claytten/golang-simplebank/internal/util"
+	"github.com/claytten/golang-simplebank/internal/worker"
 	"github.com/claytten/golang-simplebank/pb"
+	"github.com/hibiken/asynq"
 	"github.com/lib/pq"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -29,13 +31,28 @@ func (s *gapiHandlerSetup) CreateUser(ctx context.Context, req *pb.CreateUserReq
 		return nil, status.Errorf(codes.Internal, "failed to hashed password %s", err.Error())
 	}
 
-	arg := db.CreateUserParams{
-		Username:       req.GetUsername(),
-		Email:          req.GetEmail(),
-		FullName:       req.GetFullName(),
-		HashedPassword: hashedPassword,
+	arg := db.CreateUserTxParams{
+		CreateUserParams: db.CreateUserParams{
+			Username:       req.GetUsername(),
+			Email:          req.GetEmail(),
+			FullName:       req.GetFullName(),
+			HashedPassword: hashedPassword,
+		},
+		AfterCreate: func(user db.Users) error {
+			// send verification email
+			// TODO: db transaction while creating user for blocking process
+			taskPayload := &worker.PayloadSendVerifyEmail{
+				Email: user.Email,
+			}
+			opts := []asynq.Option{
+				asynq.MaxRetry(10),
+				asynq.ProcessIn(10 * time.Second),
+				asynq.Queue(worker.QueueCritical),
+			}
+			return s.server.TaskDistrbutor.DistributeTaskVerifyEmail(ctx, taskPayload, opts...)
+		},
 	}
-	user, err := s.server.DB.CreateUser(ctx, arg)
+	userTx, err := s.server.DB.CreateUserTx(ctx, arg)
 
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok {
@@ -48,7 +65,7 @@ func (s *gapiHandlerSetup) CreateUser(ctx context.Context, req *pb.CreateUserReq
 	}
 
 	res := &pb.CreateUserResponse{
-		User: gapiConverter.ConvertUser(user),
+		User: gapiConverter.ConvertUser(userTx.User),
 	}
 	return res, nil
 }
