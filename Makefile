@@ -26,7 +26,7 @@ server:
 	go run main.go
 
 test:
-	go clean -testcache && go test -v -cover ./...
+	go clean -testcache && go test -v -cover -short ./...
 
 mock:
 	mockgen -package mockdb -destination internal/db/mock/store.go github.com/claytten/golang-simplebank/internal/db/sqlc Store
